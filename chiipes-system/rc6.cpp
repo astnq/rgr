@@ -2,40 +2,40 @@
 
 typedef unsigned char uc;
 
-const int w = 32;                // Размер слова в битах
-const int r = 20;                // Количество раундов
-const uint32_t Pw = 0xb7e15163;  // Константа P для 32-битного RC6
-const uint32_t Qw = 0x9e3779b9;  // Константа Q для 32-битного RC6
-vector<uint32_t> S;              // Таблица ключей
+const int w = 32;                // Р Р°Р·РјРµСЂ СЃР»РѕРІР° РІ Р±РёС‚Р°С…
+const int r = 20;                // РљРѕР»РёС‡РµСЃС‚РІРѕ СЂР°СѓРЅРґРѕРІ
+const uint32_t Pw = 0xb7e15163;  // РљРѕРЅСЃС‚Р°РЅС‚Р° P РґР»СЏ 32-Р±РёС‚РЅРѕРіРѕ RC6
+const uint32_t Qw = 0x9e3779b9;  // РљРѕРЅСЃС‚Р°РЅС‚Р° Q РґР»СЏ 32-Р±РёС‚РЅРѕРіРѕ RC6
+vector<uint32_t> S;              // РўР°Р±Р»РёС†Р° РєР»СЋС‡РµР№
 
-// Функция циклического сдвига влево
+// Р¤СѓРЅРєС†РёСЏ С†РёРєР»РёС‡РµСЃРєРѕРіРѕ СЃРґРІРёРіР° РІР»РµРІРѕ
 inline uint32_t ROTL(uint32_t x, uint32_t y) {
     return (x << (y & (w - 1))) | (x >> (w - (y & (w - 1))));
 }
 
-// Функция циклического сдвига вправо
+// Р¤СѓРЅРєС†РёСЏ С†РёРєР»РёС‡РµСЃРєРѕРіРѕ СЃРґРІРёРіР° РІРїСЂР°РІРѕ
 inline uint32_t ROTR(uint32_t x, uint32_t y) {
     return (x >> (y & (w - 1))) | (x << (w - (y & (w - 1))));
 }
 
-// Инициализация расширенного ключа
+// РРЅРёС†РёР°Р»РёР·Р°С†РёСЏ СЂР°СЃС€РёСЂРµРЅРЅРѕРіРѕ РєР»СЋС‡Р°
 void keySchedule(const vector<uint8_t>& key) {
     int c = (key.size() + 3) / 4;
     vector<uint32_t> L(c);
 
-    // Загружаем ключ в массив слов L
+    // Р—Р°РіСЂСѓР¶Р°РµРј РєР»СЋС‡ РІ РјР°СЃСЃРёРІ СЃР»РѕРІ L
     for (int i = key.size() - 1; i >= 0; i--) {
         L[i / 4] = (L[i / 4] << 8) + key[i];
     }
 
-    // Инициализация массива S
+    // РРЅРёС†РёР°Р»РёР·Р°С†РёСЏ РјР°СЃСЃРёРІР° S
     S.resize(2 * r + 4);
     S[0] = Pw;
     for (int i = 1; i < 2 * r + 4; i++) {
         S[i] = S[i - 1] + Qw;
     }
 
-    // Объединение L и S
+    // РћР±СЉРµРґРёРЅРµРЅРёРµ L Рё S
     uint32_t A = 0, B = 0;
     int i = 0, j = 0;
     int v = 3 * max(c, 2 * r + 4);
@@ -47,8 +47,8 @@ void keySchedule(const vector<uint8_t>& key) {
     }
 }
 
-// Шифрование одного блока данных
-void encrypt(uint32_t& A, uint32_t& B, uint32_t& C, uint32_t& D) {
+// РЁРёС„СЂРѕРІР°РЅРёРµ РѕРґРЅРѕРіРѕ Р±Р»РѕРєР° РґР°РЅРЅС‹С…
+void rc6Encryption(uint32_t& A, uint32_t& B, uint32_t& C, uint32_t& D) {
     B += S[0];
     D += S[1];
     for (int i = 1; i <= r; i++) {
@@ -64,8 +64,8 @@ void encrypt(uint32_t& A, uint32_t& B, uint32_t& C, uint32_t& D) {
     C += S[2 * r + 3];
 }
 
-// Расшифровка одного блока данных
-void decrypt(uint32_t& A, uint32_t& B, uint32_t& C, uint32_t& D) {
+// Р Р°СЃС€РёС„СЂРѕРІРєР° РѕРґРЅРѕРіРѕ Р±Р»РѕРєР° РґР°РЅРЅС‹С…
+void rc6Decryption(uint32_t& A, uint32_t& B, uint32_t& C, uint32_t& D) {
     C -= S[2 * r + 3];
     A -= S[2 * r + 2];
     for (int i = r; i >= 1; i--) {
@@ -81,24 +81,5 @@ void decrypt(uint32_t& A, uint32_t& B, uint32_t& C, uint32_t& D) {
     B -= S[0];
 }
 
-int main() {
-    vector<uint8_t> key = { 0x12, 0x34, 0x56, 0x78, 0x90, 0xab, 0xcd, 0xef, 0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef };
-    keySchedule(key);
 
-    uint32_t A = 0x01234567;
-    uint32_t B = 0x89abcdef;
-    uint32_t C = 0xfedcba98;
-    uint32_t D = 0x76543210;
-
-    cout << "Original: " << hex << A << " " << B << " " << C << " " << D << endl;
-
-    encrypt(A, B, C, D);
-    cout << "Encrypted: " << hex << A << " " << B << " " << C << " " << D << endl;
-
-    decrypt(A, B, C, D);
-    cout << "Decrypted: " << hex << A << " " << B << " " << C << " " << D << endl;
-
-    return 0;
-}
- 
 
