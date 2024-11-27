@@ -1,60 +1,88 @@
 #include "Cryptosystem.h"
 
-typedef unsigned char uc;
+const int g = 613, n = 6949;
 
-// Функция для сдвига бита влево
-string leftShift(string str) {
-    char first = str[0];
-    for (size_t i = 0; i < str.size() - 1; ++i) {
-        str[i] = str[i + 1];
+int VzaimProst(int a, int b) { // ???(a, b) ??? ????????, ???????? ?? ????? ???????????????
+    if (b == 0) return a;
+    return VzaimProst(b, a % b);
+}
+
+bool CheckPrime(int num) { // ????????, ???????? ?? ????? ???????
+    if (num <= 1) return false; 
+    for (int i = 2; i * i <= num; ++i) { 
+        if (num % i == 0) return false;
     }
-    str[str.size() - 1] = first;
-    return str;
+    return true;
 }
 
-// Функция шифрования Хьюза
-string hughesEncrypt(const string& input, const string& key) {
-    // Сначала проверим, чтобы длина ключа была корректной
-    if (key.size() != 8) {
-        cerr << "Ключ должен быть длиной 8 символов!" << endl;
-        return "";
+int fi(int num) { // ??????? ??????
+    int result = 1;
+    int stepen = 0;
+    for (int i = 2; i <= num; ++i) {
+        while (num % i == 0) {
+            stepen++;
+            num /= i;
+        }
+        if (stepen != 0) {
+            result *= pow(i, stepen - 1) * (i - 1);
+        }
+        stepen = 0;
     }
+    return result;
+}
 
-    string encrypted;
-    string keyReg = key;
-
-    for (size_t i = 0; i < input.size(); ++i) {
-        bitset<8> block(input[i]);
-
-        // XOR с текущим ключом
-        block ^= bitset<8>(keyReg);
-
-        // Сдвиг ключа влево
-        keyReg = leftShift(keyReg);
-
-        // Преобразуем битсет в строку
-        encrypted += char(block.to_ulong());
+int Pow(int a, int x, int p) { // a^x mod p
+    int result = 1;
+    if (CheckPrime(p) == true) { // ???????
+        x %= p-1;
+    } else { // ?? ???????
+        x %= fi(p);     
     }
-    return encrypted;
+    for (int i = 1; i <= x; ++i) {
+        result = (result * a) % p;
+    }
+    return result;
 }
 
-// Функция дешифрования Хьюза
-string hughesDecrypt(const string& input, const string& key) {
-    return hughesEncrypt(input, key);  // Шифрование и дешифрование идентичны
+int inversia(int c, int m) { // ???????? ?????????? ????? d(c^-1 mod m)
+    int q; 
+    vector<int> one = {m, 0};
+    vector<int> two = {c, 1};
+    vector<int> three(2);
+    while (two[0] != 0) {
+        q = one[0] / two[0];
+        three[0] = one[0] % two[0];
+        three[1] = one[1] - (q * two[1]);
+        one[0] = two[0]; one[1] = two[1];
+        two[0] = three[0]; two[1] = three[1];
+    }
+    if (one[1] < 0) {
+        one[1] += m;
+    }
+    return one[1];
 }
 
-int main() {
-    string key = "11110000";  // Пример ключа
-    string message = "Hello!"; // Сообщение для шифрования
-
-    string encrypted = hughesEncrypt(message, key);
-    string decrypted = hughesDecrypt(encrypted, key);
-
-    cout << "Original message: " << message << endl;
-    cout << "Encrypted message: " << encrypted << endl;
-    cout << "Decrypted message: " << decrypted << endl;
-
-    return 0;
+int GenerateKey() {
+    int x = 100 + rand() % 100000; // ??????? A ???????? ????????? ?????? ????? ? ?????????? ???????? ????
+    int k = Pow(g, x, n);
+    int y = 100 + rand() % 100000; // ??????? B ???????? ????????? ?????? ?????
+    while (VzaimProst(y, n-1) != 1) {
+        y = 100 + rand() % 100000;  
+    }
+    int Y = Pow(g, y, n); // ??????? B ???????? ???????? A
+    int X = Pow(Y, x, n); // ??????? ? ???????? ???????? B
+    int z = inversia(y, n-1); // ??????? B ?????????
+    int ksh = Pow(X, z, n); // ??????? B ????????? ????
+    if (k == ksh) {
+        return k;
+    } else {
+        return 0;
+    }
 }
- 
 
+string hughesEncDesc(string message, int key){ // ???????? ? ???????????
+    for (int i = 0; i < message.length(); ++i) {
+        message[i] = message[i] ^ key;
+    }
+    return message;
+}                                                                           
