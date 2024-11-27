@@ -10,20 +10,26 @@
 #include <ctime>
 #include <windows.h>
 #include <fstream>
+#include <cmath>
 
 using namespace std;
 
-// Обьявляем функцию для работы с файлами
+const string passwd = "110205";
+
+// РћР±СЊСЏРІР»СЏРµРј С„СѓРЅРєС†РёСЋ РґР»СЏ СЂР°Р±РѕС‚С‹ СЃ С„Р°Р№Р»Р°РјРё
 string FileInput(string &filename);
 string FileOutput(string &filename, string &str);
 
-// Функция для ввода и проверки сообщения или ключа
-void input_and_check(string& message, const string &choice_cipher);
+// Р¤СѓРЅРєС†РёСЏ РґР»СЏ РІРІРѕРґР° Рё РїСЂРѕРІРµСЂРєРё СЃРѕРѕР±С‰РµРЅРёСЏ РёР»Рё РєР»СЋС‡Р°
+void input_and_check(string& message, string choice_shifr, string message_or_key);
+vector<char> checkinputhughes(const string& messagee);
+vector<char> checkinputrc6(const string& messagee);
 
-// Функция для шифрования и дешифрования
+
+// Р¤СѓРЅРєС†РёСЏ РґР»СЏ С€РёС„СЂРѕРІР°РЅРёСЏ Рё РґРµС€РёС„СЂРѕРІР°РЅРёСЏ
 void Enc_and_Desc(const string &choice_cipher);
 
-// Объявление переменной пароля
+// РћР±СЉСЏРІР»РµРЅРёРµ РїРµСЂРµРјРµРЅРЅРѕР№ РїР°СЂРѕР»СЏ
 extern const string passwd;
 
 #endif
