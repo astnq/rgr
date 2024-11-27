@@ -7,9 +7,13 @@ using namespace std;
 #include <string>
 #include <bitset>
 
-string leftShift(string str);
-string hughesEncrypt(const string& input, const string& key);
-string hughesDecrypt(const string& input, const string& key);
+int VzaimProst(int a, int b);
+bool CheckPrime(int num);
+int fi(int num);
+int Pow(int a, int x, int p);
+int inversia(int c, int m);
+int GenerateKey();
+string hughesEncDesc(string message, int key);
 
 #include "hughes.cpp"
 
