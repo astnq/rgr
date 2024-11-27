@@ -1,11 +1,9 @@
-#include "Cryptosystem.h"
+#include "cryptosystem.h"
 #include "hughes.h"
 #include "rc6.h"
 #include "xtea.h"
 
-const string passwd = "110205";
-
-string FileInput(string &filename) { // Ф-ия вывода из файла
+string FileInput(string &filename) { // Р¤-РёСЏ РІС‹РІРѕРґР° РёР· С„Р°Р№Р»Р°
     string str;
     ifstream input;
     input.open(filename);
@@ -18,7 +16,7 @@ string FileInput(string &filename) { // Ф-ия вывода из файла
     }
 }
 
-string FileOutput(string &filename, string &str) { // ф-ия ввода в файл
+string FileOutput(string &filename, string &str) { // С„-РёСЏ РІРІРѕРґР° РІ С„Р°Р№Р»
     ofstream output;
     output.open(filename);
     if (output.is_open()) {
@@ -30,104 +28,106 @@ string FileOutput(string &filename, string &str) { // ф-ия ввода в файл
     }
 }
 
-void input_and_check(string& message, const string &choice_cipher) { // ф-ия ввода сообщения с клавиатуры и его проверка
-    cout << "Enter the message: ";
+void input_and_check(string& message, string choice_shifr, string message_or_key) { // С„-РёСЏ РІРІРѕРґР° СЃРѕРѕР±С‰РµРЅРёСЏ СЃ РєР»Р°РІРёР°С‚СѓСЂС‹ Рё РµРіРѕ РїСЂРѕРІРµСЂРєР°
+    if (message_or_key == "message") {
+        cout << "Р’РІРµРґРёС‚Рµ СЃРѕРѕР±С‰РµРЅРёРµ: ";
+    } else {
+        cout << "Р’РІРµРґРёС‚Рµ РєРѕРґРѕРІРѕРµ СЃР»РѕРІРѕ: ";
+    }
     cin.ignore();
     while (true) {
         getline(cin, message);
         vector<char> errorinput;
-        if (choice_cipher == "RC6") {
-            errorinput = checkinputrc6(message);
-        } else if (choice_cipher == "Hughes") {
-            for (char c : message) { //Перебираем каждый символ
-                uc character = static_cast<uc>(c);
-                if (toInt(character) < 0) { // Проверяем на допустимые значения
-                    errorinput.push_back(c);
-                }
-            }
+        if (choice_shifr == "Hughes") {
+            errorinput = checkinputhughes(message);
         } else {
-            // Для шифра Шамира проверка может быть иной
-            errorinput = checkinputXtea(message);
+            errorinput = checkinputrc6(message);
         }
         if (!errorinput.empty()) {
-            cout << "Error, invalid characters entered: ";
-            for (const auto elem : errorinput) {
+            cout << "РћС€РёР±РєР°, РІРІРµРґРµРЅС‹ РЅРµРєРѕСЂСЂРµРєС‚РЅС‹Рµ СЃРёРјРІРѕР»С‹: ";
+            for (auto elem : errorinput) {
                 cout << elem << " ";
             }
-            cout << endl << "Please try again: ";
+            cout << endl << "РџРѕРІС‚РѕСЂРёС‚Рµ РїРѕРїС‹С‚РєСѓ РІРІРѕРґР°: ";
         } else {
-            if (message == "message") {
-                cout << "Message accepted!" << endl;
+            if (message_or_key == "message") {
+                cout << "РЎРѕРѕР±С‰РµРЅРёРµ РїСЂРёРЅСЏС‚Рѕ!" << endl;
+            } else {
+                cout << "РљРѕРґРѕРІРѕРµ СЃР»РѕРІРѕ РїСЂРёРЅСЏС‚Рѕ!" << endl;
             }
             break;
         }
     }
+
 }
 
-void Enc_and_Desc(const string &choice_cipher) {
-    string message, filename;
 
-    if (choice_cipher == "Hughes") {
-        input_and_check(message, "Hughes");
-    } else if (choice_cipher == "RC6") {
-        input_and_check(message, "RC6");
-    } else if (choice_cipher == "XTEA") {
-        input_and_check(message, "XTEA");
-        // Генерация ключей для шифра Шамира
-        generateXteaKeys();
+
+void Enc_and_Desc(const string &choice_shifr) {
+    string message, wordkey, filename;
+    int key;
+
+    if (choice_shifr == "RC6") {
+        input_and_check(message, "rc6", "message");
+    } else if (choice_shifr == "XTEA") {
+        input_and_check(message, "xtea", "message");
+        input_and_check(wordkey, "XTEA", "key");
+    } else if (choice_shifr == "Hughes") {
+        input_and_check(message, "hughes", "message");
+        key = GenerateKey();
     }
     cout << "Enter the filename to save the message: ";
     cin >> filename;
     FileOutput(filename, message);
 
-    // ШИФРОВКА //
+    // РЁРР¤Р РћР’РљРђ //
     message = FileInput(filename);
-    string Encrypted;
-    if (choice_cipher == "RC6") {
+    string Encrypted, Descrypted;
+    if (choice_shifr == "Hughes") {
         Encrypted = rc6Encryption(message);
-    } else if (choice_cipher == "A1Z26") {
-        Encrypted = hughesEncryption(message);
-    } else if (choice_cipher == "Shamir") {
+    } else if (choice_shifr == "RC6") {
         Encrypted = xteaEncryption(message);
+    } else if (choice_shifr == "XTEA") {
+        Encrypted = hughesEncDesc(message, key);
     }
     cout << "Encrypted message: " << Encrypted << endl;
     cout << "Enter the filename to save the encrypted message: ";
     cin >> filename;
-    string check = FileOutput(filename, Encrypted); // записываем в файл
+    string check = FileOutput(filename, Encrypted); // Р·Р°РїРёСЃС‹РІР°РµРј РІ С„Р°Р№Р»
     if (check != "Completed") {
         cout << "Error, unable to open the file " << filename << "!" << endl;
     } else {
         cout << "Message saved to file " << filename << "!" << endl;
 
-        // Расшифровка //
-        cout << "Decrypt the message? Enter /y/ or /Y/ to confirm: ";
+        // Р Р°СЃС€РёС„СЂРѕРІРєР° //
+        cout << "Р Р°СЃС€РёС„СЂРѕРІР°С‚СЊ СЃРѕРѕР±С‰РµРЅРёРµ? Р”Р»СЏ РїРѕРґС‚РІРµСЂР¶РґРµРЅРёСЏ РІРІРµРґРёС‚Рµ /y/ РёР»Рё /Y/: ";
+        
         char choice;
         cin >> choice;
         if (choice == 'y' || choice == 'Y') {
             Encrypted.clear();
-            cout << "Enter the filename where the encrypted message is stored: ";
+            cout << "Р’РІРµРґРёС‚Рµ РЅР°Р·РІР°РЅРёРµ С„Р°Р№Р»Р°, РІ РєРѕС‚РѕСЂРѕРј С…СЂР°РЅРёС‚СЃСЏ Р·Р°С€РёС„СЂРѕРІР°РЅРЅРѕРµ СЃРѕРѕР±С‰РµРЅРёРµ: ";
             cin >> filename;
             Encrypted = FileInput(filename);
             if (Encrypted != "Error: Unable to open the file") {
-                string Decrypted;
-                if (choice_cipher == "RC6") {
-                    Decrypted = rc6Decrypt(Encrypted);
-                } else if (choice_cipher == "Hughes") {
-                    Decrypted = hughesDecrypt(Encrypted);
-                } else if (choice_cipher == "XTEA") {
-                    Decrypted = xteaDecryption(Encrypted);
+                if (choice_shifr == "Hughes") {
+                    Descrypted = rc6Decryption(Encrypted);
+                } else if (choice_shifr == "Vijener") {
+                    Descrypted = xteaDecryption(Encrypted);
+                } else if (choice_shifr == "Hughes") {
+                    Descrypted = hughesEncDesc(Encrypted, key);
                 }
-                cout << "Decrypted message: " << Decrypted << endl;
-                cout << "Enter the filename to save the decrypted message: ";
+                cout << "Р Р°СЃС€РёС„СЂРѕРІР°РЅРЅРѕРµ СЃРѕРѕР±С‰РµРЅРёРµ: " << Descrypted << endl;
+                cout << "Р’РІРµРґРёС‚Рµ РЅР°Р·РІР°РЅРёРµ С„Р°Р№Р»Р°, РІ РєРѕС‚РѕСЂРѕРј Р±СѓРґРµС‚ С…СЂР°РЅРёС‚СЃСЏ Р·Р°С€РёС„СЂРѕРІР°РЅРЅС‹Р№ С„Р°Р№Р»: ";
                 cin >> filename;
-                check = FileOutput(filename, Decrypted); // записываем в файл
+                check = FileOutput(filename, Descrypted); // Р·Р°РїРёСЃС‹РІР°РµРј РІ С„Р°Р№Р»
                 if (check != "Completed") {
-                    cout << "Error, unable to open the file " << filename << "!" << endl;
+                    cout << "РћС€РёР±РєР°, РЅРµРІРѕР·РјРѕР¶РЅРѕ РѕС‚РєСЂС‹С‚СЊ С„Р°Р№Р» " << filename << "!" << endl;
                 } else {
-                    cout << "Message saved to file " << filename << "!" << endl;
+                    cout << "РЎРѕРѕР±С‰РµРЅРёРµ Р·Р°РїРёСЃР°РЅРѕ РІ С„Р°Р№Р» " << filename << "!" << endl;
                 }
             } else {
-                cout << "Error, unable to open the file " << filename << "!" << endl;
+                cout << "РћС€РёР±РєР°, РЅРµРІРѕР·РјРѕР¶РЅРѕ РѕС‚РєСЂС‹С‚СЊ С„Р°Р№Р» " << filename << "!" << endl;
             }
         }
     }
@@ -166,14 +166,14 @@ int main() {
     while (true) {
         int choice;
         while (true) {
-            try { // обработка ошибки
+            try { // РѕР±СЂР°Р±РѕС‚РєР° РѕС€РёР±РєРё
                 cout << "\nSelect the cipher number: ";
                 cin >> choice;
                 if (cin.fail()) {
                     throw invalid_argument("Enter a number only!");
                 }
                 break;
-            } catch (invalid_argument& ex) { // ловим ошибку, выводим её пользователю и запрашиваем ввод заново
+            } catch (invalid_argument& ex) { // Р»РѕРІРёРј РѕС€РёР±РєСѓ, РІС‹РІРѕРґРёРј РµС‘ РїРѕР»СЊР·РѕРІР°С‚РµР»СЋ Рё Р·Р°РїСЂР°С€РёРІР°РµРј РІРІРѕРґ Р·Р°РЅРѕРІРѕ
                 cin.clear();
                 cin.ignore();
                 cout << "Error: " << ex.what() << endl;
