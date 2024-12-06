@@ -1,5 +1,4 @@
-#ifndef CRYPTOSYSTEM_H
-#define CRYPTOSYSTEM_H
+#pragma once 
 
 #include <iostream>
 #include <vector>
@@ -11,25 +10,27 @@
 #include <windows.h>
 #include <fstream>
 #include <cmath>
+#include <iomanip>
+#include <string> 
+#include <stdexcept>
 
 using namespace std;
 
-const string passwd = "110205";
+const string passwd = "1105";
 
-// Обьявляем функцию для работы с файлами
-string FileInput(string &filename);
-string FileOutput(string &filename, string &str);
-
-// Функция для ввода и проверки сообщения или ключа
-void input_and_check(string& message, string choice_shifr, string message_or_key);
-vector<char> checkinputhughes(const string& messagee);
-vector<char> checkinputrc6(const string& messagee);
+void printHex(unsigned char* data, size_t length);
+// RC6
+void rc6_encrypt(unsigned char* data, unsigned char* key, size_t data_len);
+void rc6_decrypt(unsigned char* data, unsigned char* key, size_t data_len);
 
 
-// Функция для шифрования и дешифрования
-void Enc_and_Desc(const string &choice_cipher);
+// XTEA
+void xtea_encrypt(unsigned char* data, unsigned char* key, size_t data_len);
+void xtea_decrypt(unsigned char* data, unsigned char* key, size_t data_len);
 
-// Объявление переменной пароля
+
+// Алгоритм Hughes
+void hughes_encrypt(unsigned char* data, unsigned char* key, size_t data_len);
+void hughes_decrypt(unsigned char* data, unsigned char* key, size_t data_len);
+
 extern const string passwd;
-
-#endif
