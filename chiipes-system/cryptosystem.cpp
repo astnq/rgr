@@ -1,135 +1,82 @@
-#include "cryptosystem.h"
-#include "hughes.h"
-#include "rc6.h"
-#include "xtea.h"
+#include "xtea.cpp"
+#include "rc6.cpp"
+#include "hughes.cpp"
+#include "Cryptosystem.h"
 
-string FileInput(string &filename) { // Ф-ия вывода из файла
-    string str;
-    ifstream input;
-    input.open(filename);
-    if (input.is_open()) {
-        getline(input, str);
-        input.close();
-        return str;
-    } else {
-        return "Error: Unable to open the file";
+using namespace std;
+
+// Вспомогательная функция для представления чисел в 16-ричном виде
+void printHex(unsigned char* data, size_t length) {
+    for (size_t i = 0; i < length; i++) {
+        cout << hex << setw(2) << setfill('0') << (int)data[i] << " ";
+    }
+    cout << endl;
+}
+
+// RC6
+void rc6_encrypt(unsigned char* data, unsigned char* key, size_t data_len) {
+    for (size_t i = 0; i < data_len; i++) {
+        data[i] ^= key[i % 16]; // Простой XOR с ключом
     }
 }
 
-string FileOutput(string &filename, string &str) { // ф-ия ввода в файл
-    ofstream output;
-    output.open(filename);
-    if (output.is_open()) {
-        output << str;
-        output.close();
-        return "Completed";
-    } else {
-        return "Error: Unable to open the file";
+void rc6_decrypt(unsigned char* data, unsigned char* key, size_t data_len) {
+    for (size_t i = 0; i < data_len; i++) {
+        data[i] ^= key[i % 16]; // Простой XOR с ключом (обратная операция)
     }
 }
 
-void input_and_check(string& message, string choice_shifr, string message_or_key) { // ф-ия ввода сообщения с клавиатуры и его проверка
-    if (message_or_key == "message") {
-        cout << "Введите сообщение: ";
-    } else {
-        cout << "Введите кодовое слово: ";
-    }
-    cin.ignore();
-    while (true) {
-        getline(cin, message);
-        vector<char> errorinput;
-        if (choice_shifr == "Hughes") {
-            errorinput = checkinputhughes(message);
-        } else {
-            errorinput = checkinputrc6(message);
-        }
-        if (!errorinput.empty()) {
-            cout << "Ошибка, введены некорректные символы: ";
-            for (auto elem : errorinput) {
-                cout << elem << " ";
-            }
-            cout << endl << "Повторите попытку ввода: ";
-        } else {
-            if (message_or_key == "message") {
-                cout << "Сообщение принято!" << endl;
-            } else {
-                cout << "Кодовое слово принято!" << endl;
-            }
-            break;
-        }
+// XTEA
+void xtea_encrypt(unsigned char* data, unsigned char* key, size_t data_len) {
+    uint32_t v0 = *(uint32_t*)&data[0];
+    uint32_t v1 = *(uint32_t*)&data[4];
+    uint32_t sum = 0;
+    uint32_t delta = 0x9e3779b9;
+    uint32_t key0 = *(uint32_t*)&key[0];
+    uint32_t key1 = *(uint32_t*)&key[4];
+    uint32_t key2 = *(uint32_t*)&key[8];
+    uint32_t key3 = *(uint32_t*)&key[12];
+    
+    for (int i = 0; i < 32; i++) {
+        v0 += (((v1 << 4) + key0) ^ (v1 + sum) ^ ((v1 >> 5) + key1));
+        sum += delta;
+        v1 += (((v0 << 4) + key2) ^ (v0 + sum) ^ ((v0 >> 5) + key3));
     }
 
+    *(uint32_t*)&data[0] = v0;
+    *(uint32_t*)&data[4] = v1;
 }
 
-
-
-void Enc_and_Desc(const string &choice_shifr) {
-    string message, wordkey, filename;
-    int key;
-
-    if (choice_shifr == "RC6") {
-        input_and_check(message, "rc6", "message");
-    } else if (choice_shifr == "XTEA") {
-        input_and_check(message, "xtea", "message");
-        input_and_check(wordkey, "XTEA", "key");
-    } else if (choice_shifr == "Hughes") {
-        input_and_check(message, "hughes", "message");
-        key = GenerateKey();
+void xtea_decrypt(unsigned char* data, unsigned char* key, size_t data_len) {
+    uint32_t v0 = *(uint32_t*)&data[0];
+    uint32_t v1 = *(uint32_t*)&data[4];
+    uint32_t sum = 0xC6EF3720; // Начальное значение суммы для расшифровки
+    uint32_t delta = 0x9e3779b9;
+    uint32_t key0 = *(uint32_t*)&key[0];
+    uint32_t key1 = *(uint32_t*)&key[4];
+    uint32_t key2 = *(uint32_t*)&key[8];
+    uint32_t key3 = *(uint32_t*)&key[12];
+    
+    for (int i = 0; i < 32; i++) {
+        v1 -= (((v0 << 4) + key2) ^ (v0 + sum) ^ ((v0 >> 5) + key3));
+        sum -= delta;
+        v0 -= (((v1 << 4) + key0) ^ (v1 + sum) ^ ((v1 >> 5) + key1));
     }
-    cout << "Enter the filename to save the message: ";
-    cin >> filename;
-    FileOutput(filename, message);
 
-    // ШИФРОВКА //
-    message = FileInput(filename);
-    string Encrypted, Descrypted;
-    if (choice_shifr == "Hughes") {
-        Encrypted = rc6Encryption(message);
-    } else if (choice_shifr == "RC6") {
-        Encrypted = xteaEncryption(message);
-    } else if (choice_shifr == "XTEA") {
-        Encrypted = hughesEncDesc(message, key);
+    *(uint32_t*)&data[0] = v0;
+    *(uint32_t*)&data[4] = v1;
+}
+
+// Алгоритм Hughes
+void hughes_encrypt(unsigned char* data, unsigned char* key, size_t data_len) {
+    for (size_t i = 0; i < data_len; i++) {
+        data[i] = (data[i] + key[i % 16]) % 256; // Простая операция с ключом
     }
-    cout << "Encrypted message: " << Encrypted << endl;
-    cout << "Enter the filename to save the encrypted message: ";
-    cin >> filename;
-    string check = FileOutput(filename, Encrypted); // записываем в файл
-    if (check != "Completed") {
-        cout << "Error, unable to open the file " << filename << "!" << endl;
-    } else {
-        cout << "Message saved to file " << filename << "!" << endl;
+}
 
-        // Расшифровка //
-        cout << "Расшифровать сообщение? Для подтверждения введите /y/ или /Y/: ";
-        
-        char choice;
-        cin >> choice;
-        if (choice == 'y' || choice == 'Y') {
-            Encrypted.clear();
-            cout << "Введите название файла, в котором хранится зашифрованное сообщение: ";
-            cin >> filename;
-            Encrypted = FileInput(filename);
-            if (Encrypted != "Error: Unable to open the file") {
-                if (choice_shifr == "Hughes") {
-                    Descrypted = rc6Decryption(Encrypted);
-                } else if (choice_shifr == "Vijener") {
-                    Descrypted = xteaDecryption(Encrypted);
-                } else if (choice_shifr == "Hughes") {
-                    Descrypted = hughesEncDesc(Encrypted, key);
-                }
-                cout << "Расшифрованное сообщение: " << Descrypted << endl;
-                cout << "Введите название файла, в котором будет хранится зашифрованный файл: ";
-                cin >> filename;
-                check = FileOutput(filename, Descrypted); // записываем в файл
-                if (check != "Completed") {
-                    cout << "Ошибка, невозможно открыть файл " << filename << "!" << endl;
-                } else {
-                    cout << "Сообщение записано в файл " << filename << "!" << endl;
-                }
-            } else {
-                cout << "Ошибка, невозможно открыть файл " << filename << "!" << endl;
-            }
-        }
+void hughes_decrypt(unsigned char* data, unsigned char* key, size_t data_len) {
+    for (size_t i = 0; i < data_len; i++) {
+        data[i] = (data[i] - key[i % 16] + 256) % 256; // Обратная операция (вычитание)
     }
 }
 
@@ -140,57 +87,107 @@ int main() {
     srand(time(0));
 
     string password;
-    cout << "Enter the password: ";
+    cout << "Введите пароль: ";
     cin >> password;
     if (password != passwd) {
-        cout << "Incorrect password! Try again: ";
+        cout << "Пароль неверный! Попробуйте еще раз: ";
         cin >> password;
         if (password != passwd) {
-            cout << "You are entering the wrong password! Last attempt: ";
+            cout << "Вы вводите неверный пароль! Последняя попытка: ";
             cin >> password;
             if (password != passwd) {
-                cout << "All attempts used! Exiting the program...";
+                cout << "Вы использовали все попытки! Завершение программы...";
                 exit(0);
             }
         }
     }
 
-    system("cls");
-    cout << "\nWelcome!\n" << "------------------------------\n"
-         << "1 - Encryption using RC6 cipher\n"
-         << "2 - Hughes cipher\n"
-         << "3 - Encryption using XTEA algorithm\n"
-         << "0 - Exit the program\n"
-         << "------------------------------\n";
+    string user_input;
+    unsigned char key[16] = {0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF, 0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF};
 
-    while (true) {
-        int choice;
-        while (true) {
-            try { // обработка ошибки
-                cout << "\nSelect the cipher number: ";
-                cin >> choice;
-                if (cin.fail()) {
-                    throw invalid_argument("Enter a number only!");
-                }
-                break;
-            } catch (invalid_argument& ex) { // ловим ошибку, выводим её пользователю и запрашиваем ввод заново
-                cin.clear();
-                cin.ignore();
-                cout << "Error: " << ex.what() << endl;
-            }
-        }
+    // Ввод строки пользователем
+    cout << "Enter a string to encrypt: ";
+    getline(cin, user_input);
 
-        if (choice == 1) {
-            Enc_and_Desc("RC6");
-        } else if (choice == 2) {
-            Enc_and_Desc("Hughes");
-        } else if (choice == 3) {
-            Enc_and_Desc("XTEA");
-        } else if (choice == 0) {
-            cout << "Exiting the program...";
-            exit(0);
-        } else {
-            cout << "Invalid cipher number selected!" << endl;
-        }
+    unsigned char* data = (unsigned char*)user_input.c_str();
+    size_t data_len = user_input.length();  
+
+    int choice;
+    cout << "Welcome!\n" << "------------------------------\n";
+    cout << "1. RC6\n";
+    cout << "2. XTEA\n";
+    cout << "3. Hughes\n";
+    cout << "0. Exit the program\n"
+    << "------------------------------\n";
+    cout << "\nSelect the cipher number: ";
+    cin >> choice;
+
+    // Использование vector вместо массива
+    vector<unsigned char> data_copy(data, data + data_len);
+
+    // Шифрование
+    switch (choice) {
+        case 1:
+            cout << "Encrypting using RC6...\n";
+            rc6_encrypt(data_copy.data(), key, data_len);
+            break;
+        case 2:
+            cout << "Encrypting using XTEA...\n";
+            xtea_encrypt(data_copy.data(), key, data_len);
+            break;
+        case 3:
+            cout << "Encrypting using Hughes...\n";
+            hughes_encrypt(data_copy.data(), key, data_len);
+            break;
+        default:
+            cout << "Invalid choice.\n";
+            return 1;
     }
+
+    cout << "Encrypted data: ";
+    printHex(data_copy.data(), data_len);
+
+    // Расшифровка
+    switch (choice) {
+        case 1:
+            cout << "Decrypting using RC6...\n";
+            rc6_decrypt(data_copy.data(), key, data_len);
+            break;
+        case 2:
+            cout << "Decrypting using XTEA...\n";
+            xtea_decrypt(data_copy.data(), key, data_len);
+            break;
+        case 3:
+            cout << "Decrypting using Hughes...\n";
+            hughes_decrypt(data_copy.data(), key, data_len);
+            break;
+        default:
+            cout << "Invalid choice.\n";
+            return 1;
+    }
+
+    cout << "Decrypted data: ";
+    printHex(data_copy.data(), data_len);
+    cout << "Decrypted text: " << data_copy.data() << endl;
+
+    // Запись в файл (зашифрованный и расшифрованный текст)
+    ofstream outfile("encrypted_decrypted_data.txt", ios::binary);
+    if (outfile) {
+        // Запись зашифрованных данных
+        outfile << "Encrypted data (in hex):\n";
+        for (size_t i = 0; i < data_len; i++) {
+            outfile << hex << setw(2) << setfill('0') << (int)data_copy[i] << " ";
+        }
+        outfile << endl;
+
+        // Запись расшифрованных данных
+        outfile << "\nDecrypted data (in text): " << data_copy.data() << endl;
+
+        cout << "Encrypted and decrypted data saved to 'encrypted_decrypted_data.txt'.\n";
+    } else {
+        cout << "Error opening file for writing.\n";
+    }
+
+    return 0;
 }
+
