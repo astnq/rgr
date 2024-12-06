@@ -81,16 +81,16 @@ void hughes_decrypt(unsigned char* data, unsigned char* key, size_t data_len) {
 }
 
 int main() {
-     system("cls");
+    system("cls");
     SetConsoleCP(1251);
     SetConsoleOutputCP(1251);
     srand(time(0));
 
     string password;
-    const string passwd = "1105"; // Укажите пароль
     cout << "Enter the password: ";
     cin >> password;
 
+    // Проверка пароля
     if (password != passwd) {
         cout << "Incorrect password! Try again: ";
         cin >> password;
@@ -118,6 +118,12 @@ int main() {
         cout << "------------------------------\n";
         cout << "\nSelect the cipher number: ";
         cin >> choice;
+
+        // Проверка на правильность ввода
+        if (choice < 0 || choice > 3) {
+            cout << "Error: No such cipher number! Please enter a valid number (1, 2, 3, or 0 to exit).\n";
+            continue;  // Повторить запрос на ввод
+        }
 
         // Выход из программы
         if (choice == 0) {
@@ -199,7 +205,6 @@ int main() {
         }
     }
 
+    system("pause");  // Ожидание нажатия клавиши перед закрытием окна
     return 0;
 }
-
-
