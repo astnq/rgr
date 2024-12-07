@@ -5,7 +5,7 @@
 
 using namespace std;
 
-// Вспомогательная функция для представления чисел в 16-ричном виде
+// Р’СЃРїРѕРјРѕРіР°С‚РµР»СЊРЅР°СЏ С„СѓРЅРєС†РёСЏ РґР»СЏ РїСЂРµРґСЃС‚Р°РІР»РµРЅРёСЏ С‡РёСЃРµР» РІ 16-СЂРёС‡РЅРѕРј РІРёРґРµ
 void printHex(unsigned char* data, size_t length) {
     for (size_t i = 0; i < length; i++) {
         cout << hex << setw(2) << setfill('0') << (int)data[i] << " ";
@@ -16,13 +16,13 @@ void printHex(unsigned char* data, size_t length) {
 // RC6
 void rc6_encrypt(unsigned char* data, unsigned char* key, size_t data_len) {
     for (size_t i = 0; i < data_len; i++) {
-        data[i] ^= key[i % 16]; // Простой XOR с ключом
+        data[i] ^= key[i % 16]; // РџСЂРѕСЃС‚РѕР№ XOR СЃ РєР»СЋС‡РѕРј
     }
 }
 
 void rc6_decrypt(unsigned char* data, unsigned char* key, size_t data_len) {
     for (size_t i = 0; i < data_len; i++) {
-        data[i] ^= key[i % 16]; // Простой XOR с ключом (обратная операция)
+        data[i] ^= key[i % 16]; // РџСЂРѕСЃС‚РѕР№ XOR СЃ РєР»СЋС‡РѕРј (РѕР±СЂР°С‚РЅР°СЏ РѕРїРµСЂР°С†РёСЏ)
     }
 }
 
@@ -50,7 +50,7 @@ void xtea_encrypt(unsigned char* data, unsigned char* key, size_t data_len) {
 void xtea_decrypt(unsigned char* data, unsigned char* key, size_t data_len) {
     uint32_t v0 = *(uint32_t*)&data[0];
     uint32_t v1 = *(uint32_t*)&data[4];
-    uint32_t sum = 0xC6EF3720; // Начальное значение суммы для расшифровки
+    uint32_t sum = 0xC6EF3720; // РќР°С‡Р°Р»СЊРЅРѕРµ Р·РЅР°С‡РµРЅРёРµ СЃСѓРјРјС‹ РґР»СЏ СЂР°СЃС€РёС„СЂРѕРІРєРё
     uint32_t delta = 0x9e3779b9;
     uint32_t key0 = *(uint32_t*)&key[0];
     uint32_t key1 = *(uint32_t*)&key[4];
@@ -67,16 +67,16 @@ void xtea_decrypt(unsigned char* data, unsigned char* key, size_t data_len) {
     *(uint32_t*)&data[4] = v1;
 }
 
-// Алгоритм Hughes
+// РђР»РіРѕСЂРёС‚Рј Hughes
 void hughes_encrypt(unsigned char* data, unsigned char* key, size_t data_len) {
     for (size_t i = 0; i < data_len; i++) {
-        data[i] = (data[i] + key[i % 16]) % 256; // Простая операция с ключом
+        data[i] = (data[i] + key[i % 16]) % 256; // РџСЂРѕСЃС‚Р°СЏ РѕРїРµСЂР°С†РёСЏ СЃ РєР»СЋС‡РѕРј
     }
 }
 
 void hughes_decrypt(unsigned char* data, unsigned char* key, size_t data_len) {
     for (size_t i = 0; i < data_len; i++) {
-        data[i] = (data[i] - key[i % 16] + 256) % 256; // Обратная операция (вычитание)
+        data[i] = (data[i] - key[i % 16] + 256) % 256; // РћР±СЂР°С‚РЅР°СЏ РѕРїРµСЂР°С†РёСЏ (РІС‹С‡РёС‚Р°РЅРёРµ)
     }
 }
 
@@ -90,7 +90,7 @@ int main() {
     cout << "Enter the password: ";
     cin >> password;
 
-    // Проверка пароля
+    // РџСЂРѕРІРµСЂРєР° РїР°СЂРѕР»СЏ
     if (password != passwd) {
         cout << "Incorrect password! Try again: ";
         cin >> password;
@@ -161,13 +161,14 @@ int main() {
         cout << "Enter the filename to save encrypted data: ";
         cin >> encrypted_filename;
 
-        ofstream encrypted_file(encrypted_filename, ios::binary);
+        // Открываем файл в режиме добавления (ios::app)
+        ofstream encrypted_file(encrypted_filename, ios::app); // Режим добавления
         if (encrypted_file) {
-            encrypted_file << "Encrypted data (in hex):" << data_copy.data() << endl;;
+            encrypted_file << "Encrypted data (in hex):\n";
             for (size_t i = 0; i < data_len; i++) {
                 encrypted_file << hex << setw(2) << setfill('0') << (int)data_copy[i] << " ";
             }
-            encrypted_file << endl;
+            encrypted_file << "\n\n";
             encrypted_file.close();
             cout << "Encrypted data successfully saved to '" << encrypted_filename << "'.\n";
         } else {
@@ -200,9 +201,10 @@ int main() {
         cout << "Enter the filename to save decrypted data: ";
         cin >> decrypted_filename;
 
-        ofstream decrypted_file(decrypted_filename, ios::binary);
+        // Открываем файл в режиме добавления (ios::app)
+        ofstream decrypted_file(decrypted_filename, ios::app); // Режим добавления
         if (decrypted_file) {
-            decrypted_file << "Decrypted data (in text): " << data_copy.data() << endl;
+            decrypted_file << "Decrypted data (in text): " << data_copy.data() << "\n\n";
             decrypted_file.close();
             cout << "Decrypted data successfully saved to '" << decrypted_filename << "'.\n";
         } else {
