@@ -110,11 +110,17 @@ int main() {
     string password;
     cout << "Enter the password: ";
     cin >> password;
-
-    // Проверка пароля
-    if (password != passwd) {  // Замените "your_password" на ваш пароль
-        cout << "Incorrect password! Exiting the program...";
-        exit(0);
+    if (password != passwd) {
+        cout << "Incorrect password! Try again: ";
+        cin >> password;
+        if (password != passwd) {
+            cout << "You are entering the wrong password! Last attempt: ";
+            cin >> password;
+            if (password != passwd) {
+                cout << "All attempts used! Exiting the program...";
+                exit(0);
+            }
+        }
     }
 
     unsigned char key[16] = {0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF, 0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF};
