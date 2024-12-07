@@ -1,5 +1,89 @@
+#include "xtea.cpp"
+#include "rc6.cpp"
+#include "hughes.cpp"
+#include "Cryptosystem.h"
+
+using namespace std;
+
+// Вспомогательная функция для представления чисел в 16-ричном виде
+void printHex(unsigned char* data, size_t length) {
+    for (size_t i = 0; i < length; i++) {
+        cout << hex << setw(2) << setfill('0') << (int)data[i] << " ";
+    }
+    cout << endl;
+}
+
+// RC6
+void rc6_encrypt(unsigned char* data, unsigned char* key, size_t data_len) {
+    for (size_t i = 0; i < data_len; i++) {
+        data[i] ^= key[i % 16]; // Простой XOR с ключом
+    }
+}
+
+void rc6_decrypt(unsigned char* data, unsigned char* key, size_t data_len) {
+    for (size_t i = 0; i < data_len; i++) {
+        data[i] ^= key[i % 16]; // Простой XOR с ключом (обратная операция)
+    }
+}
+
+// XTEA
+void xtea_encrypt(unsigned char* data, unsigned char* key, size_t data_len) {
+    uint32_t v0 = *(uint32_t*)&data[0];
+    uint32_t v1 = *(uint32_t*)&data[4];
+    uint32_t sum = 0;
+    uint32_t delta = 0x9e3779b9;
+    uint32_t key0 = *(uint32_t*)&key[0];
+    uint32_t key1 = *(uint32_t*)&key[4];
+    uint32_t key2 = *(uint32_t*)&key[8];
+    uint32_t key3 = *(uint32_t*)&key[12];
+    
+    for (int i = 0; i < 32; i++) {
+        v0 += (((v1 << 4) + key0) ^ (v1 + sum) ^ ((v1 >> 5) + key1));
+        sum += delta;
+        v1 += (((v0 << 4) + key2) ^ (v0 + sum) ^ ((v0 >> 5) + key3));
+    }
+
+    *(uint32_t*)&data[0] = v0;
+    *(uint32_t*)&data[4] = v1;
+}
+
+void xtea_decrypt(unsigned char* data, unsigned char* key, size_t data_len) {
+    uint32_t v0 = *(uint32_t*)&data[0];
+    uint32_t v1 = *(uint32_t*)&data[4];
+    uint32_t sum = 0xC6EF3720; // Начальное значение суммы для расшифровки
+    uint32_t delta = 0x9e3779b9;
+    uint32_t key0 = *(uint32_t*)&key[0];
+    uint32_t key1 = *(uint32_t*)&key[4];
+    uint32_t key2 = *(uint32_t*)&key[8];
+    uint32_t key3 = *(uint32_t*)&key[12];
+    
+    for (int i = 0; i < 32; i++) {
+        v1 -= (((v0 << 4) + key2) ^ (v0 + sum) ^ ((v0 >> 5) + key3));
+        sum -= delta;
+        v0 -= (((v1 << 4) + key0) ^ (v1 + sum) ^ ((v1 >> 5) + key1));
+    }
+
+    *(uint32_t*)&data[0] = v0;
+    *(uint32_t*)&data[4] = v1;
+}
+
+// Алгоритм Hughes
+void hughes_encrypt(unsigned char* data, unsigned char* key, size_t data_len) {
+    for (size_t i = 0; i < data_len; i++) {
+        data[i] = (data[i] + key[i % 16]) % 256; // Простая операция с ключом
+    }
+}
+
+void hughes_decrypt(unsigned char* data, unsigned char* key, size_t data_len) {
+    for (size_t i = 0; i < data_len; i++) {
+        data[i] = (data[i] - key[i % 16] + 256) % 256; // Обратная операция (вычитание)
+    }
+}
+
 int main() {
     system("cls");
+    SetConsoleCP(1251);
+    SetConsoleOutputCP(1251);
     srand(time(0));
 
     string password;
@@ -73,6 +157,24 @@ int main() {
         cout << "Encrypted data: ";
         printHex(data_copy.data(), data_len);
 
+        string encrypted_filename;
+        cout << "Enter the filename to save encrypted data: ";
+        cin >> encrypted_filename;
+
+        ofstream encrypted_file(encrypted_filename, ios::binary);
+        if (encrypted_file) {
+            encrypted_file << "Encrypted data (in hex):" << data_copy.data() << endl;;
+            for (size_t i = 0; i < data_len; i++) {
+                encrypted_file << hex << setw(2) << setfill('0') << (int)data_copy[i] << " ";
+            }
+            encrypted_file << endl;
+            encrypted_file.close();
+            cout << "Encrypted data successfully saved to '" << encrypted_filename << "'.\n";
+        } else {
+            cout << "Error opening file for writing encrypted data.\n";
+            continue;
+        }
+
         switch (choice) {
             case 1:
                 cout << "Decrypting using RC6...\n";
@@ -94,28 +196,17 @@ int main() {
         printHex(data_copy.data(), data_len);
         cout << "Decrypted text: " << data_copy.data() << endl;
 
-        // *** Новая часть: выбор файла для сохранения данных ***
-        string filename;
-        cout << "Enter the filename to save encrypted and decrypted data: ";
-        cin >> filename;
+        string decrypted_filename;
+        cout << "Enter the filename to save decrypted data: ";
+        cin >> decrypted_filename;
 
-        // Открываем файл в режиме записи с заменой содержимого
-        ofstream file(filename, ios::trunc);  // <-- Изменено на ios::trunc
-        if (file) {
-            // Сохраняем зашифрованные данные
-            file << "Encrypted data (in hex):\n";
-            for (size_t i = 0; i < data_len; i++) {
-                file << hex << setw(2) << setfill('0') << (int)data_copy[i] << " ";
-            }
-            file << "\n\n";
-
-            // Сохраняем расшифрованные данные
-            file << "Decrypted data (in text):\n" << data_copy.data() << "\n\n";
-            file.close();
-
-            cout << "Encrypted and decrypted data successfully saved to '" << filename << "'.\n";
+        ofstream decrypted_file(decrypted_filename, ios::binary);
+        if (decrypted_file) {
+            decrypted_file << "Decrypted data (in text): " << data_copy.data() << endl;
+            decrypted_file.close();
+            cout << "Decrypted data successfully saved to '" << decrypted_filename << "'.\n";
         } else {
-            cout << "Error opening file for writing.\n";
+            cout << "Error opening file for writing decrypted data.\n";
         }
     }
 
