@@ -16,13 +16,13 @@ void printHex(const unsigned char* data, size_t len) {
 // RC6
 void rc6_encrypt(unsigned char* data, unsigned char* key, size_t data_len) {
     for (size_t i = 0; i < data_len; i++) {
-        data[i] ^= key[i % 16]; // РџСЂРѕСЃС‚РѕР№ XOR СЃ РєР»СЋС‡РѕРј
+        data[i] ^= key[i % 16]; // Простой XOR с ключом
     }
 }
 
 void rc6_decrypt(unsigned char* data, unsigned char* key, size_t data_len) {
     for (size_t i = 0; i < data_len; i++) {
-        data[i] ^= key[i % 16]; // РџСЂРѕСЃС‚РѕР№ XOR СЃ РєР»СЋС‡РѕРј (РѕР±СЂР°С‚РЅР°СЏ РѕРїРµСЂР°С†РёСЏ)
+        data[i] ^= key[i % 16]; // Простой XOR с ключом (обратная операция)
     }
 }
 
@@ -50,7 +50,7 @@ void xtea_encrypt(unsigned char* data, unsigned char* key, size_t data_len) {
 void xtea_decrypt(unsigned char* data, unsigned char* key, size_t data_len) {
     uint32_t v0 = *(uint32_t*)&data[0];
     uint32_t v1 = *(uint32_t*)&data[4];
-    uint32_t sum = 0xC6EF3720; // РќР°С‡Р°Р»СЊРЅРѕРµ Р·РЅР°С‡РµРЅРёРµ СЃСѓРјРјС‹ РґР»СЏ СЂР°СЃС€РёС„СЂРѕРІРєРё
+    uint32_t sum = 0xC6EF3720; // Начальное значение суммы для расшифровки
     uint32_t delta = 0x9e3779b9;
     uint32_t key0 = *(uint32_t*)&key[0];
     uint32_t key1 = *(uint32_t*)&key[4];
@@ -67,16 +67,16 @@ void xtea_decrypt(unsigned char* data, unsigned char* key, size_t data_len) {
     *(uint32_t*)&data[4] = v1;
 }
 
-// РђР»РіРѕСЂРёС‚Рј Hughes
+// Алгоритм Hughes
 void hughes_encrypt(unsigned char* data, unsigned char* key, size_t data_len) {
     for (size_t i = 0; i < data_len; i++) {
-        data[i] = (data[i] + key[i % 16]) % 256; // РџСЂРѕСЃС‚Р°СЏ РѕРїРµСЂР°С†РёСЏ СЃ РєР»СЋС‡РѕРј
+        data[i] = (data[i] + key[i % 16]) % 256; // Простая операция с ключом
     }
 }
 
 void hughes_decrypt(unsigned char* data, unsigned char* key, size_t data_len) {
     for (size_t i = 0; i < data_len; i++) {
-        data[i] = (data[i] - key[i % 16] + 256) % 256; // РћР±СЂР°С‚РЅР°СЏ РѕРїРµСЂР°С†РёСЏ (РІС‹С‡РёС‚Р°РЅРёРµ)
+        data[i] = (data[i] - key[i % 16] + 256) % 256; // Обратная операция (вычитание)
     }
 }
 // Функция для считывания содержимого файла
@@ -242,6 +242,5 @@ int main() {
             break;
         }
     }
-
     return 0;
 }
